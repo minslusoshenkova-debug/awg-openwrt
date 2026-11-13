@@ -144,7 +144,44 @@ jobs:
           WORKSPACE_DIR=$(pwd)
           
           cd "$SDK_DIR"
-          
+          # Fix OpenWrt 23.05 SetupHostCommand bug
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("include/prereq.mk")
+          s = p.read_text()
+
+          start = s.index("define SetupHostCommand")
+          marker = "  $$(eval $$(call Require,$(1),$(if $(2),$(2),Missing $(1) command)))"
+          pos = s.index(marker, start)
+          end = s.index("\nendef", pos) + len("\nendef")
+
+          replacement = r'''define SetupHostCommand
+          define Require/$(1)
+          	[ -f "$(STAGING_DIR_HOST)/bin/$(strip $(1))" ] && exit 0; \
+          	for cmd in $(call QuoteHostCommand,$(3)) $(call QuoteHostCommand,$(4)) \
+            $(call QuoteHostCommand,$(5)) $(call QuoteHostCommand,$(6)) \
+           $(call QuoteHostCommand,$(7)) $(call QuoteHostCommand,$(8)) \
+          $(call QuoteHostCommand,$(9)) $(call QuoteHostCommand,$(10)) \
+           $(call QuoteHostCommand,$(11)) $(call QuoteHostCommand,$(12)); do \
+          	if [ -n "$$$$$$$$cmd" ]; then \
+          bin="$$$$$$$$(PATH="$(subst $(space),:,$(filter-out $(STAGING_DIR_HOST)/%,$(subst :,$(space),$(PATH))))" \
+          command -v "$$$$$$$${cmd%% *}")"; \
+          if [ -x "$$$$$$$$bin" ] && eval "$$$$$$$$cmd" >/dev/null 2>/dev/null; then \
+          mkdir -p "$(STAGING_DIR_HOST)/bin"; \
+          ln -sf "$$$$$$$$bin" "$(STAGING_DIR_HOST)/bin/$(strip $(1))"; \
+          exit 0; \
+          fi; \
+          fi; \
+          done; \
+          exit 1
+          endef
+          $$(eval $$(call Require,$(1),$(if $(2),$(2),Missing $(1) command)))
+          endef'''
+
+          p.write_text(s[:start] + replacement + s[end:])
+          print("OpenWrt 23.05 prerequisite workaround applied")
+          PY
           # Update feeds to include LuCI
           ./scripts/feeds update -a
           ./scripts/feeds install -a
@@ -159,9 +196,7 @@ jobs:
           echo "CONFIG_PACKAGE_amneziawg-tools=y" >> .config
           echo "CONFIG_PACKAGE_luci-proto-amneziawg=y" >> .config
           echo "CONFIG_PACKAGE_luci-i18n-amneziawg-ru=y" >> .config
-          echo "ORIG_PATH=$ORIG_PATH"
-          command -v install
-          env PATH="$ORIG_PATH" install --version
+          
           make defconfig
           
 
