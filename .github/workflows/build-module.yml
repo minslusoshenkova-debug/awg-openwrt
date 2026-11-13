@@ -71,6 +71,8 @@ jobs:
   build:
     name: "v${{ matrix.build_env.tag }} - ${{ matrix.build_env.pkgarch}} :: ${{ matrix.build_env.target}}/${{ matrix.build_env.subtarget}} build"
     runs-on: ubuntu-latest
+    env:
+      ORIG_PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     needs: generate-config
     permissions:
       contents: write
@@ -157,8 +159,10 @@ jobs:
           echo "CONFIG_PACKAGE_amneziawg-tools=y" >> .config
           echo "CONFIG_PACKAGE_luci-proto-amneziawg=y" >> .config
           echo "CONFIG_PACKAGE_luci-i18n-amneziawg-ru=y" >> .config
-          
-          make defconfig FORCE=1
+          echo "ORIG_PATH=$ORIG_PATH"
+          command -v install
+          env PATH="$ORIG_PATH" install --version
+          make defconfig
           
 
       - name: Build AmneziaWG packages
