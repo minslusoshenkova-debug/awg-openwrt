@@ -86,7 +86,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pyelftools
+          sudo apt-get install -y coreutils python3-pyelftools
+          /usr/bin/install --version
 
       - name: Cache OpenWrt SDK
         id: cache-sdk
@@ -158,6 +159,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-i18n-amneziawg-ru=y" >> .config
           
           make defconfig
+          export ORIG_PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
       - name: Build AmneziaWG packages
         run: |
