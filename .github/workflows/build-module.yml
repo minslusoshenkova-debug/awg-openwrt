@@ -158,17 +158,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-proto-amneziawg=y" >> .config
           echo "CONFIG_PACKAGE_luci-i18n-amneziawg-ru=y" >> .config
           
-          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-          export ORIG_PATH="$PATH"
-
-          echo "Checking GNU install:"
-          echo "PATH=$PATH"
-          echo "ORIG_PATH=$ORIG_PATH"
-
-          command -v install
-          install --version
-
-          make defconfig ORIG_PATH="$PATH"
+          make defconfig FORCE=1
           
 
       - name: Build AmneziaWG packages
